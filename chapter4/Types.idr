@@ -162,3 +162,27 @@ evaluate (SingleInt i) = i
 evaluate (Addition x y) = (evaluate x) + (evaluate y)
 evaluate (Subtraction x y) = (evaluate x) - (evaluate y)
 evaluate (Multiplication x y) = (evaluate x) * (evaluate y)
+
+maxMaybe : Ord a => Maybe a -> Maybe a -> Maybe a
+maxMaybe Nothing Nothing = Nothing
+maxMaybe Nothing (Just y) = Just y
+maxMaybe (Just x) Nothing = Just x
+maxMaybe (Just x) (Just y) = case x > y of
+                                  False => Just y
+                                  True => Just x
+
+biggestTriangle2 : Picture -> Maybe Double
+biggestTriangle2 (Primitive tri@(Triangle x y)) = Just (area tri)
+biggestTriangle2 (Primitive (Rectangle x y)) = Nothing
+biggestTriangle2 (Primitive (Circle x)) = Nothing
+biggestTriangle2 (Rotate x pic) = biggestTriangle2 pic
+biggestTriangle2 (Translate x y pic) = biggestTriangle2 pic
+biggestTriangle2 (Combine pic pic1) = maxMaybe (biggestTriangle2 pic) (biggestTriangle2 pic1)
+
+testPic1 : Picture
+testPic1 = Combine (Primitive (Triangle 2 3))
+                   (Primitive (Triangle 2 4))
+
+testPic2 : Picture
+testPic2 = Combine (Primitive (Rectangle 1 3))
+                   (Primitive (Circle 4))
