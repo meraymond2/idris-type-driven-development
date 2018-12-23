@@ -58,9 +58,7 @@ searchStore str store = let search_res = filter (isInfixOf str) (items store)
                            where fmt : String -> String
                                  fmt s = case findIndex (== s) (items store) of
                                               Nothing => ""
-                                              Just i => show (finToInteger i) ++ " " ++ s
-
-
+                                              Just i => show (finToInteger i) ++ ": " ++ s
 
 processInput : DataStore -> String -> Maybe (String, DataStore)
 processInput store inp = case parse inp of
