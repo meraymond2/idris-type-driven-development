@@ -94,7 +94,7 @@ data Biggest = NoTriangle | Size Double
 biggestTriangle : Picture -> Biggest
 biggestTriangle (Rotate x pic) = biggestTriangle pic
 biggestTriangle (Translate x y pic) = biggestTriangle pic
-biggestTriangle (Primitive (Triangle x y)) = Size (area (Triangle x y))
+biggestTriangle (Primitive tri@(Triangle x y)) = Size (area tri)
 biggestTriangle (Primitive (Rectangle x y)) = NoTriangle
 biggestTriangle (Primitive (Circle x)) = NoTriangle
 biggestTriangle (Combine pic pic1) = compareSizes (biggestTriangle pic) (biggestTriangle pic1) where
@@ -105,3 +105,60 @@ biggestTriangle (Combine pic pic1) = compareSizes (biggestTriangle pic) (biggest
                                      compareSizes (Size x) (Size y) = case x > y of
                                                                            False => Size y
                                                                            True => Size x
+
+data DivResult = DivByZero | Result Double
+safeDivide : Double -> Double -> DivResult
+safeDivide x y = if y == 0 then DivByZero
+                           else Result (x / y)
+
+safeDivide2 : Double -> Double -> Maybe Double
+safeDivide2 x y = if y == 0 then Nothing else Just (x / y)
+
+-- List is not a type, it's a function
+-- that takes a Type and returns another Type
+-- in Scala that would be a Kind, but here, it's just a function (!)
+-- List Int is a type though
+
+data Tree elem = Empty
+               | Node (Tree elem) elem (Tree elem)
+
+%name Tree tree, tree1
+
+insert : Ord elem => elem -> Tree elem -> Tree elem
+insert x Empty = Node Empty x Empty
+insert x orig@(Node left val right) = case compare x val of
+                                      LT => Node (insert x left) val right
+                                      EQ => orig
+                                      GT => Node left val (insert x right)
+
+-- In order to constrain the type-parameters of the tree
+-- you can use the longer notation
+data BSTree : Type -> Type where
+     BSEmpty : Ord elem => BSTree elem
+     BSNode : Ord elem => (left : BSTree elem) -> (val : elem) ->
+                        (right : BSTree elem) -> BSTree elem
+
+-- It's easier to see how the constructors are just functions
+-- with the latter.
+
+{- exercises -}
+
+listToTree : Ord a => List a -> Tree a
+listToTree [] = Empty
+listToTree (x :: xs) = insert x (listToTree xs)
+
+treeToList : Tree a -> List a
+treeToList Empty = []
+treeToList (Node Empty x right) = x :: treeToList right
+treeToList (Node left@(Node tree y z) x right) = treeToList left ++ x :: treeToList right
+
+data Expr = SingleInt Int
+          | Addition Expr Expr
+          | Subtraction Expr Expr
+          | Multiplication Expr Expr
+
+evaluate : Expr -> Int
+evaluate (SingleInt i) = i
+evaluate (Addition x y) = (evaluate x) + (evaluate y)
+evaluate (Subtraction x y) = (evaluate x) - (evaluate y)
+evaluate (Multiplication x y) = (evaluate x) * (evaluate y)
