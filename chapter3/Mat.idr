@@ -19,3 +19,5 @@ transposeMat (x :: xs) = let xsTrans = transposeMat xs in
 addMat : Num a => Vect n (Vect m a) -> Vect n (Vect m a) -> Vect n (Vect m a)
 addMat [] [] = []
 addMat xs ys = zipWith (zipWith (+)) xs ys
+
+-- multMat : meh, too lazy
