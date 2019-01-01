@@ -136,7 +136,7 @@ insert x orig@(Node left val right) = case compare x val of
 data BSTree : Type -> Type where
      BSEmpty : Ord elem => BSTree elem
      BSNode : Ord elem => (left : BSTree elem) -> (val : elem) ->
-                        (right : BSTree elem) -> BSTree elem
+                          (right : BSTree elem) -> BSTree elem
 
 -- It's easier to see how the constructors are just functions
 -- with the latter.
