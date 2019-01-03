@@ -30,9 +30,11 @@ addToStore (MkData schema size items) newItem
     addToData [] = [newItem]
     addToData (x :: xs) = x :: addToData xs
 
+-- I still don't where schema comes from when it's not an arg...
 data Command : Schema -> Type where
   Add : SchemaToType schema -> Command schema
   Get : Integer -> Command schema
+  GetAll : Command schema
   SetSchema : (newschema : Schema) -> Command schema
   Quit : Command schema
 
@@ -70,6 +72,7 @@ parsePrefix SChar inp = getSingleQuoted (unpack inp)
         getSingleQuoted (''' :: xs) = case xs of
                                            (c :: ''' :: rest) => Just (c, ltrim (pack rest))
                                            _ => Nothing
+        getSingleQuoted _ = Nothing
 parsePrefix (l .+. r) inp = do (l_val, inp') <- parsePrefix l inp
                                (r_val, inp'') <- parsePrefix r inp'
                                Just ((l_val, r_val), inp'')
@@ -83,6 +86,7 @@ parseBySchema schema inp = case parsePrefix schema inp of
 parseCommand : (schema : Schema) -> (cmd : String) -> (args : String) -> Maybe (Command schema)
 parseCommand schema "add" inp    = do ty <- parseBySchema schema inp
                                       Just (Add ty)
+parseCommand schema "get" ""     = Just GetAll
 parseCommand schema "get" val    = if all isDigit (unpack val) then Just (Get (cast val)) else Nothing
 parseCommand schema "schema" sch = do newSchema <- parseSchema (words sch)
                                       Just (SetSchema newSchema)
@@ -105,6 +109,9 @@ getEntry pos store = let store_items = items store in
                               Nothing => Just ("Out of range\n", store)
                               Just id => Just (display (index id store_items) ++ "\n", store)
 
+getAll : (store : DataStore) -> String
+getAll store = unlines (toList (map display (items store)))
+
 setSchema : (store : DataStore) -> Schema -> Maybe DataStore
 setSchema store schema = case size store of
                               Z => Just (MkData schema _ [])
@@ -115,6 +122,7 @@ processInput store inp = case parse (schema store) inp of
                               Nothing              => Just ("Invalid command\n", store)
                               Just (Add item)      => Just ("ID: " ++ show (size store) ++ "\n", addToStore store item)
                               Just (Get pos)       => getEntry pos store
+                              Just GetAll          => Just ((getAll store), store)
                               Just (SetSchema sch) => case setSchema store sch of
                                                            Nothing => Just ("Cannot update schema.\n", store)
                                                            Just store' => Just ("Ok.\n", store')
