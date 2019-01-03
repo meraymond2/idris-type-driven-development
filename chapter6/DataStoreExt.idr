@@ -30,7 +30,23 @@ addToStore (MkData schema size items) newItem
 data Command : Schema -> Type where
   Add : SchemaToType schema -> Command schema
   Get : Integer -> Command schema
+  SetSchema : (newschema : Schema) -> Command schema
   Quit : Command schema
+
+parseSchema : List String -> Maybe Schema
+parseSchema ("String" :: xs) =
+  case xs of
+        [] => Just SString
+        _ => case parseSchema xs of
+                  Nothing => Nothing
+                  Just xs_sch => Just (SString .+. xs_sch)
+parseSchema ("Int" :: xs) =
+  case xs of
+        [] => Just SInt
+        _ => case parseSchema xs of
+                  Nothing => Nothing
+                  Just xs_sch => Just (SInt .+. xs_sch)
+parseSchema _ = Nothing
 
 parsePrefix : (schema : Schema) -> String -> Maybe (SchemaToType schema, String)
 parsePrefix SString inp = getQuoted (unpack inp)
@@ -62,6 +78,9 @@ parseCommand schema "add" inp    = case parseBySchema schema inp of
 parseCommand schema "get" val    = case all isDigit (unpack val) of
                                         False => Nothing
                                         True => Just (Get (cast val))
+parseCommand schema "schema" sch = case parseSchema (words sch) of
+                                        Nothing => Nothing
+                                        Just newSchema => Just (SetSchema newSchema)
 parseCommand schema "quit" args  = Just Quit
 parseCommand _ _ _               = Nothing
 
@@ -80,12 +99,20 @@ getEntry pos store = let store_items = items store in
                               Nothing => Just ("Out of range\n", store)
                               Just id => Just (display (index id store_items) ++ "\n", store)
 
+setSchema : (store : DataStore) -> Schema -> Maybe DataStore
+setSchema store schema = case size store of
+                              Z => Just (MkData schema _ [])
+                              (S k) => Nothing
+
 processInput : DataStore -> String -> Maybe (String, DataStore)
 processInput store inp = case parse (schema store) inp of
-                              Nothing           => Just ("Invalid command\n", store)
-                              Just (Add item)   => Just ("ID: " ++ show (size store) ++ "\n", addToStore store item)
-                              Just (Get pos)    => getEntry pos store
-                              Just Quit         => Nothing
+                              Nothing              => Just ("Invalid command\n", store)
+                              Just (Add item)      => Just ("ID: " ++ show (size store) ++ "\n", addToStore store item)
+                              Just (Get pos)       => getEntry pos store
+                              Just (SetSchema sch) => case setSchema store sch of
+                                                           Nothing => Just ("Cannot update schema.\n", store)
+                                                           Just store' => Just ("Ok.\n", store')
+                              Just Quit            => Nothing
 
 initialStore : DataStore
 initialStore = MkData SString _ []
