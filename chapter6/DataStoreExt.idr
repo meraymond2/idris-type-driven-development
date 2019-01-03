@@ -6,11 +6,14 @@ infixr 5 .+.
 
 data Schema = SString
             | SInt
+            | SChar
             | (.+.) Schema Schema
 
+-- You can't match on types, but you can match on data values, hence the need for SString, etc.
 SchemaToType : Schema -> Type
 SchemaToType SString = String
 SchemaToType SInt = Int
+SchemaToType SChar = Char
 SchemaToType (x .+. y) = (SchemaToType x, SchemaToType y)
 
 record DataStore where
@@ -36,16 +39,20 @@ data Command : Schema -> Type where
 parseSchema : List String -> Maybe Schema
 parseSchema ("String" :: xs) =
   case xs of
-        [] => Just SString
-        _ => case parseSchema xs of
-                  Nothing => Nothing
-                  Just xs_sch => Just (SString .+. xs_sch)
+       [] => Just SString
+       _  => do xs_sch <- parseSchema xs
+                Just (SString .+. xs_sch)
 parseSchema ("Int" :: xs) =
   case xs of
-        [] => Just SInt
-        _ => case parseSchema xs of
-                  Nothing => Nothing
-                  Just xs_sch => Just (SInt .+. xs_sch)
+       [] => Just SInt
+       _  => do xs_sch <- parseSchema xs
+                Just (SInt .+. xs_sch)
+parseSchema ("Char" :: xs) =
+  case xs of
+       [] => Just SChar
+       _  => do xs_sch <- parseSchema xs
+                Just (SChar .+. xs_sch)
+
 parseSchema _ = Nothing
 
 parsePrefix : (schema : Schema) -> String -> Maybe (SchemaToType schema, String)
@@ -58,6 +65,11 @@ parsePrefix SString inp = getQuoted (unpack inp)
 parsePrefix SInt inp = case span isDigit inp of
                             ("", rest) => Nothing
                             (num, rest) => Just (cast num, ltrim rest)
+parsePrefix SChar inp = getSingleQuoted (unpack inp)
+  where getSingleQuoted : List Char -> Maybe (Char, String)
+        getSingleQuoted (''' :: xs) = case xs of
+                                           (c :: ''' :: rest) => Just (c, ltrim (pack rest))
+                                           _ => Nothing
 parsePrefix (l .+. r) inp = do (l_val, inp') <- parsePrefix l inp
                                (r_val, inp'') <- parsePrefix r inp'
                                Just ((l_val, r_val), inp'')
@@ -84,6 +96,7 @@ parse schema input = case span (/= ' ') input of
 display : SchemaToType schema -> String
 display {schema = SString} string = string
 display {schema = SInt} int = show int
+display {schema = SChar} char = show char
 display {schema = (s1 .+. s2)} (a, b) = (display a) ++ ", " ++ (display b)
 
 getEntry : (pos : Integer) -> (store : DataStore) -> Maybe (String, DataStore)
