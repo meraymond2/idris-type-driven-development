@@ -21,7 +21,7 @@ record DataStore where
 
 addToStore : (store : DataStore) -> SchemaToType (schema store) -> DataStore
 addToStore (MkData schema size items) newItem
-           = MkData schema _ (addToData items)
+   = MkData schema _ (addToData items)
   where
     addToData : Vect oldSize (SchemaToType schema) -> Vect (S oldSize) (SchemaToType schema)
     addToData [] = [newItem]
@@ -58,12 +58,9 @@ parsePrefix SString inp = getQuoted (unpack inp)
 parsePrefix SInt inp = case span isDigit inp of
                             ("", rest) => Nothing
                             (num, rest) => Just (cast num, ltrim rest)
-parsePrefix (l .+. r) inp = case parsePrefix l inp of
-                                 Nothing => Nothing
-                                 Just (l_val, inp') =>
-                                   case parsePrefix r inp' of
-                                     Nothing => Nothing
-                                     Just (r_val, inp'') => Just ((l_val, r_val), inp'')
+parsePrefix (l .+. r) inp = do (l_val, inp') <- parsePrefix l inp
+                               (r_val, inp'') <- parsePrefix r inp'
+                               Just ((l_val, r_val), inp'')
 
 parseBySchema : (schema : Schema) -> String -> Maybe (SchemaToType schema)
 parseBySchema schema inp = case parsePrefix schema inp of
@@ -72,15 +69,11 @@ parseBySchema schema inp = case parsePrefix schema inp of
                                 Nothing => Nothing
 
 parseCommand : (schema : Schema) -> (cmd : String) -> (args : String) -> Maybe (Command schema)
-parseCommand schema "add" inp    = case parseBySchema schema inp of
-                                        Nothing => Nothing
-                                        Just ty => Just (Add ty)
-parseCommand schema "get" val    = case all isDigit (unpack val) of
-                                        False => Nothing
-                                        True => Just (Get (cast val))
-parseCommand schema "schema" sch = case parseSchema (words sch) of
-                                        Nothing => Nothing
-                                        Just newSchema => Just (SetSchema newSchema)
+parseCommand schema "add" inp    = do ty <- parseBySchema schema inp
+                                      Just (Add ty)
+parseCommand schema "get" val    = if all isDigit (unpack val) then Just (Get (cast val)) else Nothing
+parseCommand schema "schema" sch = do newSchema <- parseSchema (words sch)
+                                      Just (SetSchema newSchema)
 parseCommand schema "quit" args  = Just Quit
 parseCommand _ _ _               = Nothing
 
