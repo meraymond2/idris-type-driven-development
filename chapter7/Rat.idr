@@ -30,6 +30,7 @@ simplify (num // denom) = let natNum = fromIntegerNat (abs num)
                               then intNum' // intDenom'
                               else (- intNum') // intDenom'
 
+-- These are broken if you have zero in the denominator
 Num Rat where
   (+) (num // denom) (num' // denom') = simplify ((num * denom' + denom * num') // denom * denom')
   (*) (num // denom) (num' // denom') = simplify ((num * num') // (denom * denom'))
@@ -38,3 +39,16 @@ Num Rat where
 Neg Rat where
   negate (num // denom) = simplify ((-num) // denom)
   (-) x y = x + (negate y)
+
+Show Rat where
+  show (num // denom) = show num ++ "/" ++ show denom
+
+Eq Rat where
+  (==) (n1 // d1) (n2 // d2) = let (n1' // d1') = simplify (n1 // d1)
+                                   (n2' // d2') = simplify (n2 // d2)
+                                in n1' == n2' && d1' == d2'
+
+Cast Rat Double where
+  cast (num // denom) = let num' = prim__toFloatBigInt num
+                            denom' = prim__toFloatBigInt denom
+                         in num' / denom'
