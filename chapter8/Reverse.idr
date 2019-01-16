@@ -44,10 +44,25 @@ my_append2 (x :: xs) ys = rewriteRightSucc (x :: my_append2 xs ys) where
   did not change type Vect (plus m (S len)) elem`
 -}
 
+{-
+1. Starting with something you want to prove
+  myPlusCommutes Z m = ?x where x : m = plus m 0
+2. You need to bring a rewrite rule into scope, that proves the reverse.
+  rewrite (plusZeroRightNeutral m) in ?x
+    where _rewrite_rule : plus m 0 = m
+          x : m = m
+3. And since m already equals m, you can just do in Refl.
+  rewrite (plusZeroRightNeutral m) in Refl
+
+  I still not clear on this. I don't know why the expected type
+  is S (plus k m) = plus m (S k)
+-}
 total
 myPlusCommutes : (n : Nat) -> (m : Nat) -> plus n m = plus m n
 myPlusCommutes Z m = rewrite (plusZeroRightNeutral m) in Refl
-myPlusCommutes (S k) m = ?nofuckingclue m (S k)
+myPlusCommutes (S k) m = rewrite plusSuccRightSucc k m in
+                         rewrite myPlusCommutes k (S m) in
+                         rewrite plusSuccRightSucc m k in Refl
 
 myReverse : Vect n a -> Vect n a
 myReverse xs = reverse' [] xs
