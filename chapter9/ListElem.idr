@@ -34,3 +34,5 @@ isLast (x :: []) val = case decEq x val of
 isLast (x :: xs) val = case isLast xs val of
                             Yes prf => Yes (LastCons prf)
                             No contra => ?yada
+
+-- page 250
