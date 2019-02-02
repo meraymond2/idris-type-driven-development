@@ -2,7 +2,10 @@ data TakeN : List a -> Type where
      Fewer : TakeN xs
      Exact : (n_xs : List a) -> TakeN (n_xs ++ rest)
 
-takeNHelp : Nat -> (take : List a) -> (rest : List a) -> (prf : take ++ rest = init_list) -> TakeN init_list
+takeNHelp : Nat -> (take : List a) -> (rest : List a) -> (prf : init_list = take ++ rest) -> TakeN init_list
+takeNHelp Z take rest prf = rewrite prf in Exact take
+takeNHelp (S k) take [] prf = Fewer
+takeNHelp (S k) take (x :: xs) prf = ?takeNHelp_rhs_3
 
 appendNilLeftNeutral : (list : List a) -> [] ++ list = list
 appendNilLeftNeutral list = Refl
