@@ -2,9 +2,16 @@ data TakeN : List a -> Type where
      Fewer : TakeN xs
      Exact : (n_xs : List a) -> TakeN (n_xs ++ rest)
 
+appendCommutative' : (xs : List a) -> (y : a) -> (ys : List a) -> (xs ++ [y]) ++ ys = xs ++ [y] ++ ys
+appendCommutative' [] y ys = Refl
+appendCommutative' (x :: xs) y ys = let inductiveHypoth = appendCommutative' xs y ys in
+                                      rewrite inductiveHypoth in Refl
+
 appendCommutative : (xs : List a) -> (y : a) -> (ys : List a) ->
                     (prf : init_list = (xs ++ (y :: ys))) ->
                     (xs ++ (y :: ys)) = ((xs ++ [y]) ++ ys)
+appendCommutative [] _ _ _ = Refl
+appendCommutative xs y ys prf = rewrite appendCommutative' xs y ys in Refl
 
 takeNHelp : Nat -> (take : List a) -> (rest : List a) -> (prf : init_list = take ++ rest) -> TakeN init_list
 takeNHelp Z take rest prf = rewrite prf in Exact take
