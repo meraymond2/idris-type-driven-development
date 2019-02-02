@@ -2,10 +2,14 @@ data TakeN : List a -> Type where
      Fewer : TakeN xs
      Exact : (n_xs : List a) -> TakeN (n_xs ++ rest)
 
+appendCommutative : (xs : List a) -> (y : a) -> (ys : List a) ->
+                    (prf : init_list = (xs ++ (y :: ys))) ->
+                    (xs ++ (y :: ys)) = ((xs ++ [y]) ++ ys)
+
 takeNHelp : Nat -> (take : List a) -> (rest : List a) -> (prf : init_list = take ++ rest) -> TakeN init_list
 takeNHelp Z take rest prf = rewrite prf in Exact take
 takeNHelp (S k) take [] prf = Fewer
-takeNHelp (S k) take (x :: xs) prf = ?takeNHelp_rhs_3
+takeNHelp (S k) take (x :: xs) prf = rewrite prf in takeNHelp k (take ++ [x]) xs (appendCommutative take x xs prf)
 
 appendNilLeftNeutral : (list : List a) -> [] ++ list = list
 appendNilLeftNeutral list = Refl
